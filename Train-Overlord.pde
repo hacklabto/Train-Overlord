@@ -14,13 +14,14 @@ class LED
   public:
     LED(int,int,int);
     void setColor(int);
-  
+    
+    int PinRed;  
     int PinGreen;
     int PinBlue;
-    int PinRed;
+
 };
 
-LED::LED (int pinG, int pinB, int pinR) { 
+LED::LED (int pinR, int pinG, int pinB) { 
   PinGreen = pinG;
   PinBlue = pinB;
   PinRed = pinR;
@@ -68,7 +69,7 @@ void LED::setColor(int color) {
 
 #include <AFMotor.h>
 
-LED myLED(6,5,3); 
+LED myLED(3,4,5); 
 AF_DCMotor motor1(1, MOTOR12_8KHZ); //create motor #1, 64KHz pwm
 
 void setup()
@@ -76,12 +77,12 @@ void setup()
   motor1.setSpeed(200); //set the speed to 200/255
   motor1.run(RELEASE);
   pinMode(myLED.PinRed, OUTPUT);
-  pinMode(myLED.PinBlue, OUTPUT);
   pinMode(myLED.PinGreen, OUTPUT);
+  pinMode(myLED.PinBlue, OUTPUT);
   
   digitalWrite(myLED.PinRed, HIGH);
+  digitalWrite(myLED.PinGreen, HIGH);  
   digitalWrite(myLED.PinBlue, HIGH);
-  digitalWrite(myLED.PinGreen, HIGH);
 }
 
 
