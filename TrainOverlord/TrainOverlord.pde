@@ -9,6 +9,8 @@
 #define BACKMULTI 1.0
 #define FWDMULTI 1.1
 
+#define WINCHHOMESWITCH 7
+
 class LED
 {
   public:
@@ -71,23 +73,34 @@ void LED::setColor(int color) {
 
 LED myLED(3,4,5); 
 AF_DCMotor motor1(1, MOTOR12_8KHZ); //create motor #1, 64KHz pwm
+AF_DCMotor motor2(2, MOTOR12_8KHZ);
 
 void setup()
 { 
   motor1.setSpeed(200); //set the speed to 200/255
   motor1.run(RELEASE);
+  motor2.setSpeed(200);
+  motor2.run(RELEASE);
   pinMode(myLED.PinRed, OUTPUT);
   pinMode(myLED.PinGreen, OUTPUT);
   pinMode(myLED.PinBlue, OUTPUT);
+  pinMode(WINCHHOMESWITCH, INPUT);
   
   digitalWrite(myLED.PinRed, HIGH);
   digitalWrite(myLED.PinGreen, HIGH);  
   digitalWrite(myLED.PinBlue, HIGH);
+  Serial.begin(9600);
 }
 
 
+boolean hashomed = false;
+boolean running = false;
+boolean backward = false;
+unsigned long runningstart;
+
 void loop()
 {  
+  /*
   myLED.setColor(GREEN);
   motor1.run(FORWARD);
   motor1.setSpeed(255);
@@ -102,6 +115,33 @@ void loop()
   motor1.run(RELEASE);
   myLED.setColor(TEAL);
   delay(500); 
+  */
+  
+  if(digitalRead(WINCHHOMESWITCH) == true)
+  {
+      Serial.println("WINCH EMERGENCY STOP");
+      hashomed = true;
+      motor2.run(BACKWARD);
+      delay(100);
+      motor2.run(RELEASE);
+      running = false;
+      
+  }
+  else if(running == false && hashomed == false)
+  {
+    Serial.println("RUNNING WINCH FORWARDS");
+    motor2.run(FORWARD);
+    runningstart = millis();
+    running = true;
+    //delay(1500);
+  }
+  else if(running)
+  {
+    if(!backward && millis() - runningstart >= 4000)
+    {
+      motor2.run(BACKWARD);
+    }
+  }
 }
 
  
