@@ -15,7 +15,7 @@
 //Unused for now
 //#define WinchBarrelSwitch A2
 
-#define MarkerIRThreshhold 560
+#define MarkerIRThreshhold 580
 
 #define DropLength 8000
 #define SaneResenseTime 2000
@@ -84,6 +84,7 @@ void setup() {
 }
 
 void loop() {
+  int irReading;
   switch(State) {
   
   case MotionStart:
@@ -94,11 +95,15 @@ void loop() {
     senseTimer = millis();
     break;
   case SenseWait:
-    if(readIR() >= MarkerIRThreshhold && (millis() - senseTimer >= SaneResenseTime)) {
+  irReading = readIR();
+    if(irReading >= MarkerIRThreshhold && (millis() - senseTimer >= SaneResenseTime)) {
       //Hit a marker 
       //Stop movement
       wheelMotor.run(RELEASE);
-      
+#if DEBUG == 1
+   Serial.print("MARKER HIT @ IR = ");
+   Serial.println(irReading);
+#endif
       //Change to state 2
       State = WinchActionStart;
     }
@@ -122,10 +127,6 @@ void loop() {
     }
     else {
       //Waiting for timer.
-#if DEBUG == 1
-   Serial.print("Waiting for drop, millis() - winchTime = ");
-   Serial.println(millis() - winchTime);
-#endif
       if(millis() - winchTime >= DropLength) {
         //Stop winch.
         winchDeadStop();
