@@ -1,6 +1,6 @@
 #include <AFMotor.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 //Winch Constants
 #define WinchHomeSwitch 8 //Homing Endstop
@@ -21,8 +21,6 @@ boolean running = false;
 boolean hitbottom = false;
 boolean testOver = false;
 
-AF_DCMotor motor1(1, MOTOR12_8KHZ); //create motor #1, 64KHz pwm
-
 void stopWinchRaising() {
   winchMotor.run(loweringDirection);
   delay(deadStopReverseTime);
@@ -31,8 +29,8 @@ void stopWinchRaising() {
 
 void setup() {
   
-  motor1.setSpeed(200); //set the speed to 200/255
-  motor1.run(RELEASE);
+  winchMotor.setSpeed(200); //set the speed to 200/255
+  winchMotor.run(RELEASE);
   
   //Setup buttons
   pinMode(WinchHomeSwitch, INPUT);
@@ -77,6 +75,7 @@ void loop() {
     //Start the test.
     running = true;
     winchTime = millis();
+    
     winchMotor.run(loweringDirection);
   }
 }
