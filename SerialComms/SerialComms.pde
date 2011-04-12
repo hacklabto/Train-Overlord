@@ -16,7 +16,7 @@ m    - Winch down for 1 second
 M    - Winch down for 5 seconds
 j    - Stop Winch
 
-i    - Toggle IR marker message ("--MARKER--");
+i    - Toggle IR marker message ("--MARKER--")
 
 a    - Toggle move until IR hit then reverse
 R    - Reset
@@ -31,9 +31,10 @@ R    - Reset
 //Unused for now
 //#define WinchBarrelSwitch A2
 
-#define MarkerIRThreshhold 580
+#define MarkerIRThreshhold 585
 
-#define SaneResenseTime 2000
+
+#define SaneResenseTime 1200
 #define WinchDeadStopWait 75
 
 #define WheelMotorSpeed 255
@@ -59,26 +60,57 @@ AF_DCMotor winchMotor(2, MOTOR12_8KHZ);
 
 //State Globals
 boolean winchDown = false;
+boolean winchMoving = false;
 
+boolean moving = false;
+boolean movingForward = false;
 boolean autoMove = false;
 
 int moveState = 0;
 int winchState = 0;
 
-boolean IRMarker = false;
+boolean atMarker = false;
+boolean IRMarkerMessage = false;
 
 //Time globals
-unsigned long winchTime; //Used to wait for the winch to drop.
-unsigned long senseTimer; //Used to ride past the marker so we don't sense the same one twice.
+unsigned long winchTime = 0; //Used to wait for the winch to drop.
+unsigned long wheelTime = 0; //Used for timed movement.
+unsigned long senseTime = 0; //Used to ride past the marker so we don't sense the same one twice.
 
 int readIR() {
   return analogRead(IRSensor);
 }
 
 void winchDeadStop() {
-  winchMotor.run(winchDown ? WinchLoweringDirection : WinchRaisingDirection);
-  delay(WinchDeadStopWait);
-  winchMotor.run(RELEASE);
+  if(winchMoving) {
+    winchMotor.run(winchDown ? WinchLoweringDirection : WinchRaisingDirection);
+    delay(WinchDeadStopWait);
+    winchMotor.run(RELEASE);
+    winchMoving = false;
+    Serial.println("Winch Stopped");
+  }
+}
+
+void wheelDeadStop() {
+  if(moving) {
+    wheelMotor.run(RELEASE);
+    moving = false;
+    Serial.println("Movement Stopped");
+    senseTime = 0;
+    wheelTime = 0;
+  }
+  autoMove = false;
+}
+
+void move(boolean forward, unsigned long time) {
+  if(!autoMove)
+    wheelDeadStop();
+  moving = true;
+  movingForward = forward ? true : false ;
+  wheelMotor.run( forward ? WheelForwardDirection : WheelBackwardDirection );
+  
+  senseTime = millis() + SaneResenseTime;
+  wheelTime = time;
 }
 
 void setup() {
@@ -104,67 +136,85 @@ void loop() {
     switch(command) {
      case 'Q':
        Serial.println("Verbose state query: ");
+       
        break;
-       case 'q':
+     case 'q':
        Serial.println("State query: ");
        
        break;
      case 'f':
        Serial.println("Move forward, 1 second");
-       
+       move(true, millis() + 1000);
        break;
      case 'F':
        Serial.println("Move forward until stopped");
-   
+       move(true, 0);
        break;
      case 'b':
        Serial.println("Move backward, 1 second");
-       
+       move(false, millis() + 1000);
        break;
      case 'B':
        Serial.println("Move backward until stopped");
-       
+       move(false, 0);
        break;
      case 's':
-       Serial.println("Stopping all wheel movement");
-       
-       
+       wheelDeadStop();
        break;
      case 'S':
-       Serial.println("Stopping all actions");
+       Serial.println("FullStop!");
        
-       
+       wheelDeadStop();
+       winchDeadStop();
        break;
      case 'u':
        Serial.println("Winch up, 1 second.");
-       
+       winchTime = millis() + 1000;
+       winchMoving = true;
+       winchDown = true;
+       winchMotor.run(WinchRaisingDirection);
        break;
      case 'U':
        Serial.println("Winch up until home.");
-       
+       winchTime = 0;
+       winchMoving = true;
+       winchDown = true;
+       winchMotor.run(WinchRaisingDirection);
        break;
      case 'm':
        Serial.println("Winch down, 1 second");
-       
+       winchTime = millis() + 1000;
+       winchMoving = true;
+       winchDown = false;
+       winchMotor.run(WinchLoweringDirection);
        break;
      case 'M':
        Serial.println("Winch down, 5 seconds");
-       
+       winchTime = millis() + 5000;
+       winchMoving = true;
+       winchDown = false;
+       winchMotor.run(WinchLoweringDirection);
        break;
      case 'j':
-       Serial.println("Stop winch");
-       
+       winchDeadStop();
        break;
      case 'i':
        //IR marker readout
-       
+       IRMarkerMessage = !IRMarkerMessage;
        break;
      case 'a':
        Serial.println("Toggling auto move");
-       
+       if(autoMove) {
+         wheelDeadStop();
+       }
+       else {
+         autoMove = true;
+         move(movingForward, 0);
+         
+       }
        break;
      case 'R':
-       Serial.println("Resetting");
+       //Serial.println("Resetting");
        
        break;
     }
@@ -172,7 +222,7 @@ void loop() {
     Serial.flush();
   }
   
-  boolean atMarker = false;
+  atMarker = false;
   int irReading = readIR();
   //IR Status Pump
   if(irReading >= MarkerIRThreshhold) {
@@ -180,8 +230,30 @@ void loop() {
   }
   
   //Wheel Status Pump
-  if(
+  if(wheelTime && millis() >= wheelTime) {
+    wheelDeadStop();
+  }
+  else if(atMarker && millis() >=  senseTime) {
+    if(autoMove) {
+      //Reverse direction
+      move(!movingForward, 0);
+    } 
+    else {
+      //Stop
+      wheelDeadStop();
+      movingForward = !movingForward;
+    }
+    
+    if(IRMarkerMessage) {
+      Serial.println("--MARKER--");
+    }
+  }
   
   //Winch Status Pump
+  if(winchMoving) {
+    if((winchDown && digitalRead(WinchHomeSwitch)) || (winchTime != 0 && millis() >= winchTime) ) {
+      winchDeadStop();
+    }
+  }
   
 }
