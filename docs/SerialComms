@@ -1,0 +1,20 @@
+q - Query Status
+Q - Query Verbose Status 
+
+f - Move Forwards 1 second 
+F - Move Forwards until stopped 
+b - Move Backwards 1 second 
+B - Move Backwards until stopped 
+s - Stop 
+S - Stop ALL (Including winch) 
+
+u - Winch up for 1 second 
+U - Winch up until home switch reached 
+m - Winch down for 1 second 
+M - Winch down for 5 seconds 
+j - Stop Winch 
+
+i - Toggle IR marker message 
+
+a - Toggle move until IR hit then reverse
+R - Reset
