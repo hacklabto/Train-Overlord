@@ -3,7 +3,7 @@
 #define DEBUG 0
 
 //Winch Constants
-#define WinchHomeSwitch 8 //Homing Endstop
+#define WinchHomeSwitch A1 //Homing Endstop
 #define loweringtime 2000 //Time to lower the winch before raising it again in milliseconds
 #define loweringDirection FORWARD
 #define raisingDirection BACKWARD

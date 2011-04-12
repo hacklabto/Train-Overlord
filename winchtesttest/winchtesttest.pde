@@ -37,10 +37,10 @@ void setup() {
 }
 
 void loop() {
-  winchMotor.run(FORWARD);
-  delay(1000);
-  winchMotor.run(BACKWARD);
-  delay(1000);
-  winchMotor.run(RELEASE);
-  delay(1000);
+    winchMotor.run(FORWARD);
+    delay(1000);
+    winchMotor.run(BACKWARD);
+    delay(1001);
+    winchMotor.run(RELEASE);
+    delay(1000);
 }
