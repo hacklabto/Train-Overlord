@@ -8,14 +8,18 @@
   
 #include <AFMotor.h>
 
+#define DEBUG 0
+
 #define IRSensor A0
 #define WinchHomeSwitch A1
 //Unused for now
 //#define WinchBarrelSwitch A2
 
+#define MarkerIRThreshhold 545
+
 #define DropLength 8000
 #define SaneResenseTime 2000
-#define WinchDeadStopWait 200
+#define WinchDeadStopWait 100
 
 #define WheelMotorSpeed 255
 #define WinchMotorSpeed 200
@@ -44,7 +48,7 @@ boolean winchDown = false;
 
 //Time globals
 unsigned long winchTime; //Used to wait for the winch to drop.
-unsigned long senseWait; //Used to ride past the marker so we don't sense the same one twice.
+unsigned long senseTimer; //Used to ride past the marker so we don't sense the same one twice.
 
 int readIR() {
   return analogRead(IRSensor);
@@ -61,6 +65,11 @@ void winchStartMotion() {
 }
 
 void setup() {
+  
+#if DEBUG == 1
+   Serial.begin(9600);
+   Serial.println("DEMO -1- BEGINS");
+#endif
   pinMode(IRSensor, INPUT);
   pinMode(WinchHomeSwitch, INPUT);
   
@@ -82,10 +91,10 @@ void loop() {
     wheelMotor.run( winchDown ? WheelBackwardDirection : WheelForwardDirection );
     movingForwards = !winchDown;
     State = SenseWait;
-    senseWait = millis();
+    senseTimer = millis();
     break;
   case SenseWait:
-    if(readIR() > 510 && (millis() - senseWait >= SaneResenseTime)) {
+    if(readIR() >= MarkerIRThreshhold && (millis() - senseTimer >= SaneResenseTime)) {
       //Hit a marker 
       //Stop movement
       wheelMotor.run(RELEASE);
@@ -97,7 +106,7 @@ void loop() {
   case WinchActionStart:
     winchStartMotion();
     winchTime = millis();
-    break;
+    State = WinchActionWait;
   case WinchActionWait:
     //Waiting for winch to finish moving.
     if(winchDown) {
@@ -113,7 +122,10 @@ void loop() {
     }
     else {
       //Waiting for timer.
-      
+#if DEBUG == 1
+   Serial.print("Waiting for drop, millis() - winchTime = ");
+   Serial.println(millis() - winchTime);
+#endif
       if(millis() - winchTime >= DropLength) {
         //Stop winch.
         winchDeadStop();
