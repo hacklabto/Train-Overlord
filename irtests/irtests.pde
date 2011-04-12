@@ -5,13 +5,13 @@ int readingAv[8]; //Circular buffer
 byte nextRead = 0;
 
 void setup() {
-  
+  pinMode(IRPIN, INPUT);
   
   Serial.begin(9600);
 }
 
 void loop() {
-  for(int i = 0; i < 8; i++) {
+  /*for(int i = 0; i < 8; i++) {
     readingAv[nextRead] = analogRead(IRPIN);
     
     //Advance nextRead
@@ -25,8 +25,10 @@ void loop() {
     acc += readingAv[i];
   }
   float average = (float)acc / 8.0;
+  */
   
-  Serial.println(average);
+  reading = analogRead(IRPIN);
+  Serial.println(reading);
   
   delay(600);
 }
