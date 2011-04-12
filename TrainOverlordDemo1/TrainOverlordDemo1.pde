@@ -15,7 +15,7 @@
 //Unused for now
 //#define WinchBarrelSwitch A2
 
-#define MarkerIRThreshhold 545
+#define MarkerIRThreshhold 560
 
 #define DropLength 8000
 #define SaneResenseTime 2000
