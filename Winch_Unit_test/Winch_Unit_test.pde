@@ -23,6 +23,12 @@ boolean testOver = false;
 
 AF_DCMotor motor1(1, MOTOR12_8KHZ); //create motor #1, 64KHz pwm
 
+void stopWinchRaising() {
+  winchMotor.run(loweringDirection);
+  delay(deadStopReverseTime);
+  winchMotor.run(RELEASE);
+}
+
 void setup() {
   
   motor1.setSpeed(200); //set the speed to 200/255
