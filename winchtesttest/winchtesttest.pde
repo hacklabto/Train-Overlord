@@ -31,6 +31,9 @@ void setup() {
   
   winchMotor.setSpeed(200); //set the speed to 200/255
   winchMotor.run(RELEASE);
+  
+  //Setup buttons
+  pinMode(WinchHomeSwitch, INPUT);
 }
 
 void loop() {
