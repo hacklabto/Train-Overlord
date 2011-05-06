@@ -16,6 +16,11 @@ m    - Winch down for 1 second
 M    - Winch down for 5 seconds
 j    - Stop Winch
 
+L    - turn laser on
+l    - turn laser off
+t###   - tilt 20-90
+p###   - pan 0-165
+
 i    - Toggle IR marker message ("--MARKER--")
 
 a    - Toggle move until IR hit then reverse
@@ -222,40 +227,42 @@ void loop() {
        digitalWrite(LaserPowerPin,0);
        break;
      case 'p': 
-       // Pan-
-       pan-=5;
-       if (pan<0)
-         pan=0;
-       laserPan.write(pan);
-       Serial.print("Pan: ");
-       Serial.println(pan);
-       break;
-     case 'P':
-       // Pan+
-       pan+=5;
-       if (pan >165)
-         pan=165;
-       laserPan.write(pan);
-       Serial.print("Pan: ");
-       Serial.println(pan);
+       // Pan (Range: 0 - 165)
+       delay(10); // give it a few ms to get the value
+       if ( Serial.available() >2 )
+       {
+         char p[3];
+          p[0] = Serial.read();
+          p[1] = Serial.read();
+          p[2] = Serial.read();
+          int pan = atoi(p);
+          if (pan > 165)
+           pan = 165;
+          if (pan < 0)
+            pan = 0; 
+       	  laserPan.write(pan);
+	  Serial.print("Panned to:");
+	  Serial.println(pan);
+       }
        break;
      case 't':
-       // Tilt-
-       tilt-=5;
-       if (tilt < 20)
-         tilt=20;
-       laserTilt.write(tilt);
-       Serial.print("Tilt: ");
-       Serial.println(tilt);
-       break;
-     case 'T':
-       // Tilt+
-       tilt+=5;
-       if (tilt>90)
-         tilt=90;
-       laserTilt.write(tilt);
-       Serial.print("Tilt: ");
-       Serial.println(tilt);
+       // Tilt (range: 20 - 90)
+       delay(10); // give it a few ms to get the value
+       if ( Serial.available() >2 )
+       {
+         char t[3];
+          t[0] = Serial.read();
+          t[1] = Serial.read();
+          t[2] = Serial.read();
+          int tilt = atoi(t);
+          if (tilt > 90)
+           tilt = 90;
+          if (tilt < 20)
+            tilt = 20; 
+       	  laserTilt.write(tilt);
+	  Serial.print("Tilted to:");
+	  Serial.println(tilt);
+       }
        break;
      case 'a':
        Serial.println("Toggling auto move");
