@@ -23,6 +23,7 @@ R    - Reset
 */
 
 #include <AFMotor.h>
+#include <Servo.h>
 
 #define DEBUG 0
 
@@ -45,6 +46,14 @@ R    - Reset
 
 #define WheelForwardDirection FORWARD
 #define WheelBackwardDirection BACKWARD
+
+#define LaserPowerPin  2
+#define PanPin 10
+#define TiltPin 9
+Servo laserPan;
+Servo laserTilt;
+int pan=90;
+int tilt=90;
 
 
 /*
@@ -127,7 +136,9 @@ void setup() {
   wheelMotor.setSpeed(WheelMotorSpeed);
   wheelMotor.run(RELEASE);
   
-  
+  laserPan.attach(PanPin);
+  laserTilt.attach(TiltPin);
+  pinMode(LaserPowerPin,OUTPUT);
 }
 
 void loop() {
@@ -201,6 +212,50 @@ void loop() {
      case 'i':
        //IR marker readout
        IRMarkerMessage = !IRMarkerMessage;
+       break;
+     case 'L':
+       // Laser on:
+       digitalWrite(LaserPowerPin,1);
+       break;
+     case 'l':
+       // Laser off
+       digitalWrite(LaserPowerPin,0);
+       break;
+     case 'p': 
+       // Pan-
+       pan-=5;
+       if (pan<0)
+         pan=0;
+       laserPan.write(pan);
+       Serial.print("Pan: ");
+       Serial.println(pan);
+       break;
+     case 'P':
+       // Pan+
+       pan+=5;
+       if (pan >165)
+         pan=165;
+       laserPan.write(pan);
+       Serial.print("Pan: ");
+       Serial.println(pan);
+       break;
+     case 't':
+       // Tilt-
+       tilt-=5;
+       if (tilt < 20)
+         tilt=20;
+       laserTilt.write(tilt);
+       Serial.print("Tilt: ");
+       Serial.println(tilt);
+       break;
+     case 'T':
+       // Tilt+
+       tilt+=5;
+       if (tilt>90)
+         tilt=90;
+       laserTilt.write(tilt);
+       Serial.print("Tilt: ");
+       Serial.println(tilt);
        break;
      case 'a':
        Serial.println("Toggling auto move");
