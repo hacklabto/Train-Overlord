@@ -24,6 +24,7 @@ p###   - pan 0-165
 i    - Toggle IR marker message ("--MARKER--")
 
 a    - Toggle move until IR hit then reverse
+d    - Automatic laser DEMO
 R    - Reset
 */
 
@@ -33,7 +34,7 @@ R    - Reset
 #define DEBUG 0
 
 #define IRSensor A0
-#define WinchHomeSwitch A1
+#define WinchHomeSwitch A1 // pull down resistor, switch pulls up.
 //Unused for now
 //#define WinchBarrelSwitch A2
 
@@ -69,8 +70,8 @@ int tilt=90;
 */
 
 //Globals
-AF_DCMotor wheelMotor(1, MOTOR12_8KHZ);
-AF_DCMotor winchMotor(2, MOTOR12_8KHZ);
+AF_DCMotor wheelMotor(3, MOTOR12_8KHZ);
+AF_DCMotor winchMotor(4, MOTOR12_8KHZ);
 
 //State Globals
 boolean winchDown = false;
@@ -79,6 +80,8 @@ boolean winchMoving = false;
 boolean moving = false;
 boolean movingForward = false;
 boolean autoMove = false;
+boolean autoLaser = false;
+boolean laserOn = false;
 
 int moveState = 0;
 int winchState = 0;
@@ -86,10 +89,13 @@ int winchState = 0;
 boolean atMarker = false;
 boolean IRMarkerMessage = false;
 
+int autoAngle;
+
 //Time globals
 unsigned long winchTime = 0; //Used to wait for the winch to drop.
 unsigned long wheelTime = 0; //Used for timed movement.
 unsigned long senseTime = 0; //Used to ride past the marker so we don't sense the same one twice.
+unsigned long laserTime = 0; //Used for slowing down the servos in automatic mode
 
 int readIR() {
   return analogRead(IRSensor);
@@ -116,6 +122,12 @@ void wheelDeadStop() {
   autoMove = false;
 }
 
+void laserDeadStop() {
+  laserOn = false;
+  autoLaser = false;
+  digitalWrite(LaserPowerPin, 0);
+}
+
 void move(boolean forward, unsigned long time) {
   if(!autoMove)
     wheelDeadStop();
@@ -125,6 +137,18 @@ void move(boolean forward, unsigned long time) {
   
   senseTime = millis() + SaneResenseTime;
   wheelTime = time;
+}
+
+void autoMoveLaser() {
+  laserTime = millis() + 30;
+  if (autoLaser){
+    laserOn=true;
+    autoAngle=autoAngle+3;
+    if (autoAngle > 360) autoAngle = 0;
+    laserPan.write(90+(30*sin(PI/180.0*(float)autoAngle)));
+    laserTilt.write(60+(15*cos(PI/180.0*(float)autoAngle)));
+  }
+
 }
 
 void setup() {
@@ -144,6 +168,8 @@ void setup() {
   laserPan.attach(PanPin);
   laserTilt.attach(TiltPin);
   pinMode(LaserPowerPin,OUTPUT);
+  delay(10);
+  Serial.println("Finished Booting.");
 }
 
 void loop() {
@@ -179,9 +205,10 @@ void loop() {
        break;
      case 'S':
        Serial.println("FullStop!");
-       
+       digitalWrite(LaserPowerPin,0);
        wheelDeadStop();
        winchDeadStop();
+       laserDeadStop();
        break;
      case 'u':
        Serial.println("Winch up, 1 second.");
@@ -218,17 +245,32 @@ void loop() {
        //IR marker readout
        IRMarkerMessage = !IRMarkerMessage;
        break;
+     case 'T':
+       digitalWrite(LaserPowerPin,1);
+       tone(3, 5000, 200); 
+       delay(200);
+       tone(3,4800,50);
+       digitalWrite(LaserPowerPin,0);
+       delay(300);
+       digitalWrite(LaserPowerPin,1);
+       tone(3, 5000, 200); 
+       delay(200);
+       tone(3,4800,50);
+       digitalWrite(LaserPowerPin,0);
+       break;
      case 'L':
        // Laser on:
-       digitalWrite(LaserPowerPin,1);
+       laserOn=true;
        break;
      case 'l':
        // Laser off
-       digitalWrite(LaserPowerPin,0);
+       laserOn=false;
        break;
      case 'p': 
        // Pan (Range: 0 - 165)
-       delay(10); // give it a few ms to get the value
+       delay(4); // give it a few ms to get the value. 1 / 9600baud * 8bits/byte + 1 * 1000ms/s = 0.94ms / byte + overhead, or 4ms minimum to work....
+                 // Ideally, this should take just the pure value of the character, and use a single byte for this....
+                 // This should be done at the same time as the web + phone interfaces though.
        if ( Serial.available() >2 )
        {
          char p[3];
@@ -246,8 +288,8 @@ void loop() {
        }
        break;
      case 't':
-       // Tilt (range: 20 - 90)
-       delay(10); // give it a few ms to get the value
+       // Tilt (range: 20 - 110)
+       delay(4); // give it a few ms to get the value
        if ( Serial.available() >2 )
        {
          char t[3];
@@ -255,8 +297,8 @@ void loop() {
           t[1] = Serial.read();
           t[2] = Serial.read();
           int tilt = atoi(t);
-          if (tilt > 90)
-           tilt = 90;
+          if (tilt >110)
+           tilt = 110;
           if (tilt < 20)
             tilt = 20; 
        	  laserTilt.write(tilt);
@@ -272,12 +314,21 @@ void loop() {
        else {
          autoMove = true;
          move(movingForward, 0);
-         
        }
        break;
-     case 'R':
-       //Serial.println("Resetting");
-       
+     case 'd':
+       if(autoLaser) {
+         Serial.println("Laser demo off");
+         laserDeadStop();
+       }
+       else {
+         Serial.println("Laser demo initiated");
+         autoLaser = true;
+       }
+       break;
+     case 'R': // Does this even work?
+       Serial.println("Resetting");
+       asm volatile ("jmp 0x0000"); 
        break;
     }
     
@@ -317,5 +368,10 @@ void loop() {
       winchDeadStop();
     }
   }
+  
+  // calculate the new laser positions and set the servos
+  digitalWrite(LaserPowerPin,laserOn);
+  if (autoLaser && laserTime <= millis() )
+    autoMoveLaser();
   
 }
