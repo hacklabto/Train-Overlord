@@ -21,6 +21,8 @@ l    - turn laser off
 t###   - tilt 20-90
 p###   - pan 0-165
 
+e#   - play Darth Vader evil sound 1, 2 or 3
+
 i    - Toggle IR marker message ("--MARKER--")
 
 a    - Toggle move until IR hit then reverse
@@ -56,6 +58,11 @@ R    - Reset
 #define LaserPowerPin  2
 #define PanPin 10
 #define TiltPin 9
+
+#define EvilSound1 A1
+#define EvilSound2 A2
+#define EvilSound3 A3
+
 Servo laserPan;
 Servo laserTilt;
 int pan=90;
@@ -157,6 +164,14 @@ void setup() {
   //Set Pins.
   pinMode(IRSensor, INPUT);
   pinMode(WinchHomeSwitch, INPUT);
+
+  // initialize the Darth Vader sound board
+  pinMode(EvilSound1, OUTPUT);
+  pinMode(EvilSound2, OUTPUT);
+  pinMode(EvilSound3, OUTPUT);
+  digitalWrite(EvilSound1, LOW);
+  digitalWrite(EvilSound2, LOW);
+  digitalWrite(EvilSound3, LOW);
   
   //Set Motors.
   winchMotor.setSpeed(WinchMotorSpeed);
@@ -304,6 +319,39 @@ void loop() {
        	  laserTilt.write(tilt);
 	  Serial.print("Tilted to:");
 	  Serial.println(tilt);
+       }
+       break;
+     case 'e': 
+       // make Evil sound
+       delay(4); // give it a few ms to get the value. 1 / 9600baud * 8bits/byte + 1 * 1000ms/s = 0.94ms / byte + overhead, or 4ms minimum to work....
+                 // Ideally, this should take just the pure value of the character, and use a single byte for this....
+                 // This should be done at the same time as the web + phone interfaces though.
+       if ( Serial.available() >0 )
+       {
+         char e;
+          e = Serial.read();
+          int evilnum = atoi(&e);
+          if (evilnum == 1)
+          {
+             digitalWrite(EvilSound1, HIGH);
+             delay(10);  // 1ms is probably enough
+             digitalWrite(EvilSound1, LOW);
+             Serial.println("You have failed me for the last time");
+          }
+          else if (evilnum == 2)
+          {
+             digitalWrite(EvilSound2, HIGH);
+             delay(10);  // 1ms is probably enough
+             digitalWrite(EvilSound2, LOW);
+             Serial.println("If you only knew the power of the dark side!");
+          }
+          else if (evilnum == 3)
+          {
+             digitalWrite(EvilSound3, HIGH);
+             delay(10);  // 1ms is probably enough
+             digitalWrite(EvilSound3, LOW);
+             Serial.println("I find your lack of faith disturbing!");
+          }
        }
        break;
      case 'a':
