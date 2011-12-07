@@ -31,7 +31,7 @@ a    - Toggle move until IR hit then reverse
 d    - Automatic laser DEMO
 R    - Reset
 
-Notice: Claw is on Motor 2's pin. Do not use motor 2!
+Notice: Claw is on Motor 1's pin. Buzzer is on pin 
 */
 
 #include <AFMotor.h>
@@ -267,19 +267,6 @@ void loop() {
      case 'i':
        //IR marker readout
        IRMarkerMessage = !IRMarkerMessage;
-       break;
-     case 'T':
-       digitalWrite(LaserPowerPin,1);
-       tone(3, 5000, 200); 
-       delay(200);
-       tone(3,4800,50);
-       digitalWrite(LaserPowerPin,0);
-       delay(300);
-       digitalWrite(LaserPowerPin,1);
-       tone(3, 5000, 200); 
-       delay(200);
-       tone(3,4800,50);
-       digitalWrite(LaserPowerPin,0);
        break;
      case 'L':
        // Laser on:
