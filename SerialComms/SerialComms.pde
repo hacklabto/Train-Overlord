@@ -1,4 +1,4 @@
-/* This sketch details serial communications over USB or XBee:
+sd	/* This sketch details serial communications over USB or XBee:
 q    - Query Status
 Q    - Query Verbose Status
 
@@ -21,6 +21,8 @@ l    - turn laser off
 t###   - tilt 20-90
 p###   - pan 0-165
 
+c###   - claw grip 0-180
+
 e#   - play Darth Vader evil sound 1, 2 or 3
 
 i    - Toggle IR marker message ("--MARKER--")
@@ -28,6 +30,8 @@ i    - Toggle IR marker message ("--MARKER--")
 a    - Toggle move until IR hit then reverse
 d    - Automatic laser DEMO
 R    - Reset
+
+Notice: Claw is on Motor 2's pin. Do not use motor 2!
 */
 
 #include <AFMotor.h>
@@ -51,6 +55,7 @@ R    - Reset
 
 #define WinchLoweringDirection FORWARD
 #define WinchRaisingDirection BACKWARD
+#define ClawPin 3
 
 #define WheelForwardDirection FORWARD
 #define WheelBackwardDirection BACKWARD
@@ -65,9 +70,10 @@ R    - Reset
 
 Servo laserPan;
 Servo laserTilt;
+Servo claw;
 int pan=90;
 int tilt=90;
-
+int grip=180;
 
 /*
 #define MotionStart 0
@@ -77,8 +83,8 @@ int tilt=90;
 */
 
 //Globals
-AF_DCMotor wheelMotor(3, MOTOR12_8KHZ);
-AF_DCMotor winchMotor(4, MOTOR12_8KHZ);
+AF_DCMotor wheelMotor(3, MOTOR12_8KHZ); // Pin 5
+AF_DCMotor winchMotor(4, MOTOR12_8KHZ); // Pin 6
 
 //State Globals
 boolean winchDown = false;
@@ -182,6 +188,8 @@ void setup() {
   
   laserPan.attach(PanPin);
   laserTilt.attach(TiltPin);
+  claw.attach(ClawPin);
+
   pinMode(LaserPowerPin,OUTPUT);
   delay(10);
   Serial.println("Finished Booting.");
@@ -319,6 +327,20 @@ void loop() {
        	  laserTilt.write(tilt);
 	  Serial.print("Tilted to:");
 	  Serial.println(tilt);
+       }
+       break;
+     case 'c': // Claw
+       delay(4); // give it a few ms to get the value - Experimentally determined.
+       if ( Serial.available() >2 )
+       {
+         char c[3];
+          c[0] = Serial.read();
+          c[1] = Serial.read();
+          c[2] = Serial.read();
+          int claw_grip = atoi(c);
+       	  claw.write(claw_grip);
+	  Serial.print("CLAWED! ");
+	  Serial.println(claw_grip);
        }
        break;
      case 'e': 
