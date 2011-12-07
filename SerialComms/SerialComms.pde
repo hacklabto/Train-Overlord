@@ -1,4 +1,4 @@
-sd	/* This sketch details serial communications over USB or XBee:
+/* This sketch details serial communications over USB or XBee:
 q    - Query Status
 Q    - Query Verbose Status
 
